@@ -60,6 +60,7 @@ _start() {
 
 _stop() {
     container_clean ${APP_NAME}_postgresql
+    container_clean ${APP_NAME}_caddy
 }
 
 if [ "$_action" = "start" ]; then
