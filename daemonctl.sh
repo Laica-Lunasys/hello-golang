@@ -32,11 +32,13 @@ _start() {
         fi
 
         docker run --name ${APP_NAME}_postgresql --network ${APP_NAME} \
+            -u $(id -u):$(id -g) \
             -p 5432:5432 \
             -e POSTGRES_USER="postgres" \
             -e POSTGRES_PASSWORD="postgres" \
             -e POSTGRES_DB="hello_golang" \
             -v $_basement/local/${APP_NAME}_postgresql:/var/lib/postgresql/data \
+            -v $_basement/sql:/docker-entrypoint-initdb.d:ro \
             -dit postgres:11.3
     fi
 }
