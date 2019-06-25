@@ -41,6 +41,21 @@ _start() {
             -v $_basement/sql:/docker-entrypoint-initdb.d:ro \
             -dit postgres:11.3
     fi
+
+    container_clean ${APP_NAME}_caddy
+    if [ ! "$(docker ps -aq -f status=running -f name=^/${APP_NAME}_caddy$)" ]; then
+        if [ ! -e $_basement/local/${APP_NAME}_caddy ]; then
+            mkdir -p $_basement/local/${APP_NAME}_caddy
+            echo ":: Created database directory"
+        fi
+
+        docker run --name ${APP_NAME}_caddy --network ${APP_NAME} \
+            -p 80:80 \
+            -p 443:443 \
+            -v $_basement/Caddyfile:/etc/Caddyfile \
+            -v $_basement/local/caddy:/root/.caddy \
+            -dit abiosoft/caddy -agree=true --email=support@synchthia.net --host hello-golang.lunasys.dev --conf /etc/Caddyfile
+    fi
 }
 
 _stop() {

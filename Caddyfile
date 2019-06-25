@@ -1,0 +1,7 @@
+https://hello-golang.lunasys.dev {
+        tls support@synchthia.net
+        proxy / hello-golang:8081 {
+                transparent
+                websocket
+        }
+}
