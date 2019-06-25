@@ -3,4 +3,3 @@ steps:
     args: ['build', '-t', 'gcr.io/laica-lunasys/hello-golang', '.']
   - name: 'gcr.io/cloud-builders/docker'
     args: ['push', 'gcr.io/laica-lunasys/hello-golang']
-
