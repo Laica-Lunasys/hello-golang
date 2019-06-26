@@ -21,7 +21,7 @@ _start() {
     echo ":: Starting daemon..."
     bash ./daemonctl.sh start postgresql
 
-    if [ "$2" = "--with-caddy" ]; then
+    if [ "$1" = "--with-caddy" ]; then
         bash ./daemonctl.sh start caddy
     fi
 
