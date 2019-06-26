@@ -12,7 +12,7 @@ bash ./launcher.sh stop
 ```
 > Note: If you want start just only daemon (for dev), Try: `bash ./daemonctl.sh start postgres`.
 
-# On Stage...
+### On Stage...
 ```bash
 # Start
 bash ./launcher.sh start --with-caddy
