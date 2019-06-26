@@ -1,15 +1,12 @@
 #!/bin/bash
 set -e
-cd "$(dirname "$0")"
-_basement=$PWD
-_action=$1
-
+cd "$(dirname "$0")" && _basement=$PWD
 APP_NAME="hello-golang"
 
 container_clean() {
     _name=$1
-    if [ "$(docker ps -aq -f name=^/$_name)" ]; then
-        if [ "$(docker ps -aq -f status=running -f name=^/$_name)" ]; then
+    if [ "$(docker ps -aq -f name=^/${_name}$)" ]; then
+        if [ "$(docker ps -aq -f status=running -f name=^/${_name}$)" ]; then
             echo "=> Stopping $_name"
             docker stop $_name
         fi
@@ -18,19 +15,16 @@ container_clean() {
     fi
 }
 
-_start() {
-    if [ ! "$(docker network ls --format '{{split .Name ":"}}' | fgrep ${APP_NAME})" ]; then
-        echo ":: Creating Docker Network: ${APP_NAME}"
-        docker network create ${APP_NAME}
-    fi
+_postgresql() {
+    if [ "$1" = "start" ]; then
+        container_clean ${APP_NAME}_postgresql
 
-    container_clean ${APP_NAME}_postgresql
-    if [ ! "$(docker ps -aq -f status=running -f name=^/${APP_NAME}_postgresql$)" ]; then
         if [ ! -e $_basement/local/${APP_NAME}_postgresql ]; then
             mkdir -p $_basement/local/${APP_NAME}_postgresql
             echo ":: Created database directory"
         fi
 
+        echo "=> Starting ${APP_NAME}_postgresql"
         docker run --name ${APP_NAME}_postgresql --network ${APP_NAME} \
             -u $(id -u):$(id -g) \
             -p 5432:5432 \
@@ -42,13 +36,21 @@ _start() {
             -dit postgres:11.3
     fi
 
-    container_clean ${APP_NAME}_caddy
-    if [ ! "$(docker ps -aq -f status=running -f name=^/${APP_NAME}_caddy$)" ]; then
+    if [ "$1" = "stop" ]; then
+        container_clean ${APP_NAME}_postgresql
+    fi
+}
+
+_caddy() {
+    if [ "$1" = "start" ]; then
+        container_clean ${APP_NAME}_caddy
+
         if [ ! -e $_basement/local/${APP_NAME}_caddy ]; then
             mkdir -p $_basement/local/${APP_NAME}_caddy
-            echo ":: Created database directory"
+            echo ":: Created caddy directory"
         fi
 
+        echo "=> Starting ${APP_NAME}_caddy"
         docker run --name ${APP_NAME}_caddy --network ${APP_NAME} \
             -p 80:80 \
             -p 443:443 \
@@ -56,18 +58,39 @@ _start() {
             -v $_basement/local/caddy:/root/.caddy \
             -dit abiosoft/caddy -agree=true --email=support@synchthia.net --host hello-golang.lunasys.dev --conf /etc/Caddyfile
     fi
+
+    if [ "$1" = "stop" ]; then
+        container_clean ${APP_NAME}_caddy
+    fi
 }
 
-_stop() {
-    container_clean ${APP_NAME}_postgresql
-    container_clean ${APP_NAME}_caddy
-}
+if [ "$1" = "start" ]; then
+    if [ ! "$(docker network ls --format '{{split .Name ":"}}' | fgrep ${APP_NAME})" ]; then
+        echo ":: Creating Docker Network: ${APP_NAME}"
+        docker network create ${APP_NAME}
+    fi
 
-if [ "$_action" = "start" ]; then
-    _start
-elif [ "$_action" = "stop" ]; then
-    _stop
-else
-    echo "Usage: daemonctl <start/stop>"
+    if [ "$2" = "postgres" ] || [ "$2" = "postgresql" ] || [ "$2" = "--all" ]; then
+        _postgresql start
+    fi
+
+    if [ "$2" = "caddy" ] || [ "$2" = "--all" ]; then
+        _caddy start
+    fi
 fi
 
+if [ "$1" = "stop" ]; then
+    set +e
+    if [ "$2" = "caddy" ] || [ "$2" = "--all" ]; then
+        _caddy stop
+    fi
+
+    if [ "$2" = "postgres" ] || [ "$2" = "postgresql" ] || [ "$2" = "--all" ]; then
+        _postgresql stop
+    fi
+fi
+
+if [ "$1" = "" ] || [ "$1" = "--help" ]; then
+    echo "Usage:"
+    echo "daemonctl.sh <start/stop> <daemon_name/--all>"
+fi
