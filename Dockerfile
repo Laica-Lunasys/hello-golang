@@ -17,7 +17,8 @@ WORKDIR /app
 
 EXPOSE 8080
 COPY --from=build /go/src/github.com/Laica-Lunasys/hello-golang/hello-golang /app/
+COPY docker-entrypoint.sh /app/
 
 RUN apk add --no-cache ca-certificates
 
-ENTRYPOINT ["/app/hello-golang"]
+ENTRYPOINT ["sh", "/app/docker-entrypoint.sh"]
